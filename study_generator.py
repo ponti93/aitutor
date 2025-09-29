@@ -80,14 +80,19 @@ class StudyGenerator:
         content = self.knowledge_manager.get_document_content(document_id)
         if not content:
             return ["Error: Document content not found"]
-        
+
         text = content.get('content', '')
         if not text:
             return ["Error: No text content available"]
-        
+
         # Use Gemini AI to extract key concepts
         concepts = self.gemini_ai.extract_key_concepts(text, max_concepts)
-        return concepts
+
+        # Ensure we return a list of strings
+        if isinstance(concepts, list):
+            return concepts
+        else:
+            return ["Error: Invalid concepts format received"]
     
     def generate_study_plan(self, document_ids: List[int], study_hours: int = 10) -> Dict[str, Any]:
         """Generate personalized study plan using Gemini AI"""

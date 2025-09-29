@@ -284,53 +284,66 @@
                 
             case 'quiz':
                 title = 'Practice Quiz';
-                content = `<div class="quiz-content">
-                    <h6>Quiz Questions</h6>
-                    ${data.quiz.map((question, index) => `
-                        <div class="card mb-3">
-                            <div class="card-body">
-                                <h6>Question ${index + 1}</h6>
-                                <p>${question.question}</p>
-                                <ul class="list-unstyled">
-                                    ${question.options.map(option => `<li>${option}</li>`).join('')}
-                                </ul>
-                                <p><strong>Answer:</strong> ${question.answer}</p>
+                if (data.quiz && data.quiz.length > 0 && data.quiz[0].error) {
+                    content = `<div class="alert alert-warning">Error generating quiz: ${data.quiz[0].error}</div>`;
+                } else {
+                    content = `<div class="quiz-content">
+                        <h6>Quiz Questions</h6>
+                        ${data.quiz.map((question, index) => `
+                            <div class="card mb-3">
+                                <div class="card-body">
+                                    <h6>Question ${index + 1}</h6>
+                                    <p>${question.question}</p>
+                                    <ul class="list-unstyled">
+                                        ${question.options.map((option, optIndex) => `<li><strong>${String.fromCharCode(65 + optIndex)}:</strong> ${option}</li>`).join('')}
+                                    </ul>
+                                    <p><strong>Answer:</strong> ${question.answer}</p>
+                                    ${question.explanation ? `<p><small class="text-muted">${question.explanation}</small></p>` : ''}
+                                </div>
                             </div>
-                        </div>
-                    `).join('')}
-                </div>`;
+                        `).join('')}
+                    </div>`;
+                }
                 break;
                 
             case 'flashcards':
                 title = 'Flashcards';
-                content = `<div class="flashcards-content">
-                    <h6>Flashcards</h6>
-                    <div class="row">
-                        ${data.flashcards.map((card, index) => `
-                            <div class="col-md-6 mb-3">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h6>Card ${index + 1}</h6>
-                                        <p><strong>Front:</strong> ${card.front}</p>
-                                        <p><strong>Back:</strong> ${card.back}</p>
+                if (data.flashcards && data.flashcards.length > 0 && data.flashcards[0].error) {
+                    content = `<div class="alert alert-warning">Error generating flashcards: ${data.flashcards[0].error}</div>`;
+                } else {
+                    content = `<div class="flashcards-content">
+                        <h6>Flashcards</h6>
+                        <div class="row">
+                            ${data.flashcards.map((card, index) => `
+                                <div class="col-md-6 mb-3">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <h6>Card ${index + 1}</h6>
+                                            <p><strong>Front:</strong> ${card.front || card.question}</p>
+                                            <p><strong>Back:</strong> ${card.back || card.answer}</p>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>`;
+                            `).join('')}
+                        </div>
+                    </div>`;
+                }
                 break;
                 
             case 'concepts':
                 title = 'Key Concepts';
-                content = `<div class="concepts-content">
-                    <h6>Key Concepts</h6>
-                    <ul class="list-group">
-                        ${data.concepts.map(concept => `
-                            <li class="list-group-item">${concept}</li>
-                        `).join('')}
-                    </ul>
-                </div>`;
+                if (data.concepts && data.concepts.length > 0 && data.concepts[0].includes('Error')) {
+                    content = `<div class="alert alert-warning">${data.concepts[0]}</div>`;
+                } else {
+                    content = `<div class="concepts-content">
+                        <h6>Key Concepts</h6>
+                        <ul class="list-group">
+                            ${data.concepts.map(concept => `
+                                <li class="list-group-item">${concept}</li>
+                            `).join('')}
+                        </ul>
+                    </div>`;
+                }
                 break;
         }
         
@@ -342,9 +355,9 @@
             alert('No material to save');
             return;
         }
-        
+
         showLoading();
-        
+
         fetch('/save-study-material', {
             method: 'POST',
             headers: {
@@ -362,9 +375,8 @@
             if (data.success) {
                 $('#resultModal').modal('hide');
                 alert('Material saved successfully!');
-                // Don't reload the page - keep the current session active
-                // Update the UI to show the session is active with the actual session ID
-                updateActiveSessionUI(data.session_id);
+                // Show the new session that was created
+                showNewSessionCreated(data.session_id);
             } else {
                 alert('Error saving material: ' + data.error);
             }
@@ -375,47 +387,69 @@
         });
     }
 
-    function updateActiveSessionUI(sessionId = null) {
-        // Update the UI to show that materials are being added to the current session
-        const sessionInfo = document.getElementById('activeSessionInfo');
-        if (!sessionInfo) {
-            // Create active session info if it doesn't exist
-            const sessionDiv = document.createElement('div');
-            sessionDiv.id = 'activeSessionInfo';
-            sessionDiv.className = 'alert alert-success mt-3';
-            const sessionLink = sessionId ? `/study-session/${sessionId}` : `/study-session/${currentDocumentId}`;
-            sessionDiv.innerHTML = `
-                <i class="fas fa-play-circle me-2"></i>
-                <strong>Active Study Session:</strong> ${currentDocumentName}
-                <a href="${sessionLink}" class="btn btn-primary btn-sm ms-2">
-                    View Session
-                </a>
-            `;
-            document.querySelector('.container').insertBefore(sessionDiv, document.querySelector('.row.mt-5'));
-        } else if (sessionId) {
-            // Update the link with the actual session ID
-            const link = sessionInfo.querySelector('a');
-            link.href = `/study-session/${sessionId}`;
+    function showNewSessionCreated(sessionId) {
+        // Remove any existing session info
+        const existingSessionInfo = document.getElementById('activeSessionInfo');
+        if (existingSessionInfo) {
+            existingSessionInfo.remove();
         }
+
+        // Create new session info
+        const sessionDiv = document.createElement('div');
+        sessionDiv.id = 'activeSessionInfo';
+        sessionDiv.className = 'alert alert-success mt-3';
+        sessionDiv.innerHTML = `
+            <i class="fas fa-check-circle me-2"></i>
+            <strong>New Study Session Created!</strong> Material saved successfully.
+            <a href="/study-session/${sessionId}" class="btn btn-primary btn-sm ms-2">
+                View Session
+            </a>
+            <button type="button" class="btn btn-outline-primary btn-sm ms-2" onclick="continueStudying()">
+                Continue Studying
+            </button>
+        `;
+        document.querySelector('.container').insertBefore(sessionDiv, document.querySelector('.row.mt-5'));
     }
+
+    function continueStudying() {
+        // Remove the session info to allow creating another session
+        const sessionInfo = document.getElementById('activeSessionInfo');
+        if (sessionInfo) {
+            sessionInfo.remove();
+        }
+        // Reset the form for the next material
+        currentGeneratedMaterial = null;
+        currentMaterialType = '';
+    }
+
+    // Auto-select document if provided in URL
+    {% if selected_document_id %}
+        document.addEventListener('DOMContentLoaded', function() {
+            const documentSelect = document.getElementById('documentSelect');
+            documentSelect.value = {{ selected_document_id }};
+            // Trigger the change event to update the UI
+            const event = new Event('change');
+            documentSelect.dispatchEvent(event);
+        });
+    {% endif %}
 
     // Initialize active session UI if we have a document selected
     document.getElementById('documentSelect').addEventListener('change', function() {
         const selectedOption = this.options[this.selectedIndex];
         currentDocumentId = this.value;
         currentDocumentName = selectedOption.text;
-        
+
         if (currentDocumentId) {
             // Enable all buttons
             document.getElementById('summaryBtn').disabled = false;
             document.getElementById('quizBtn').disabled = false;
             document.getElementById('flashcardsBtn').disabled = false;
             document.getElementById('conceptsBtn').disabled = false;
-            
+
             // Show document info
             document.getElementById('selectedDocumentInfo').style.display = 'block';
             document.getElementById('currentDocumentName').textContent = currentDocumentName;
-            
+
             // Check if we already have an active session for this document
             updateActiveSessionUI();
         } else {
@@ -424,10 +458,10 @@
             document.getElementById('quizBtn').disabled = true;
             document.getElementById('flashcardsBtn').disabled = true;
             document.getElementById('conceptsBtn').disabled = true;
-            
+
             // Hide document info
             document.getElementById('selectedDocumentInfo').style.display = 'none';
-            
+
             // Remove active session info
             const sessionInfo = document.getElementById('activeSessionInfo');
             if (sessionInfo) {
@@ -435,5 +469,32 @@
             }
         }
     });
+
+    function deleteStudySession(sessionId) {
+        if (confirm('Are you sure you want to delete this study session? This will permanently remove all materials in this session.')) {
+            showLoading();
+
+            fetch(`/delete-study-session/${sessionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                hideLoading();
+                if (data.success) {
+                    alert('Study session deleted successfully!');
+                    location.reload();
+                } else {
+                    alert('Error deleting session: ' + data.error);
+                }
+            })
+            .catch(error => {
+                hideLoading();
+                alert('Error deleting session: ' + error);
+            });
+        }
+    }
 </script>
 {% endblock %}

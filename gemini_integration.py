@@ -61,21 +61,41 @@ class GeminiAI:
         {{
             "question": "the question text",
             "options": ["option A", "option B", "option C", "option D"],
-            "correct_answer": "A" (or B, C, D),
+            "answer": "correct option text",
             "explanation": "brief explanation of why this is correct"
         }}
-        
+
         Content:
-        {content}
-        
+        {content[:8000]}
+
         Questions:
         """
-        
+
         try:
             response = self.model.generate_content(prompt)
+            response_text = response.text.strip()
+
+            # Clean the response text - remove markdown formatting if present
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
             # Parse the JSON response
-            questions = json.loads(response.text.strip())
-            return questions
+            questions = json.loads(response_text)
+
+            # Ensure it's a list
+            if not isinstance(questions, list):
+                questions = [questions]
+
+            # Validate the structure of each question
+            validated_questions = []
+            for question in questions:
+                if isinstance(question, dict) and "question" in question and "options" in question:
+                    validated_questions.append(question)
+
+            return validated_questions if validated_questions else [{"error": "No valid questions generated"}]
+
         except Exception as e:
             return [{"error": f"Failed to generate quiz: {str(e)}"}]
     
@@ -87,20 +107,41 @@ class GeminiAI:
         Focus on key concepts, definitions, and important facts.
         Format the response as a JSON array with the following structure for each flashcard:
         {{
-            "question": "the question text",
-            "answer": "the answer text"
+            "front": "the question text",
+            "back": "the answer text"
         }}
-        
+
         Content:
-        {content}
-        
+        {content[:8000]}
+
         Flashcards:
         """
-        
+
         try:
             response = self.model.generate_content(prompt)
-            flashcards = json.loads(response.text.strip())
-            return flashcards
+            response_text = response.text.strip()
+
+            # Clean the response text - remove markdown formatting if present
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
+            # Parse the JSON response
+            flashcards = json.loads(response_text)
+
+            # Ensure it's a list
+            if not isinstance(flashcards, list):
+                flashcards = [flashcards]
+
+            # Validate the structure of each flashcard
+            validated_flashcards = []
+            for card in flashcards:
+                if isinstance(card, dict) and "front" in card and "back" in card:
+                    validated_flashcards.append(card)
+
+            return validated_flashcards if validated_flashcards else [{"error": "No valid flashcards generated"}]
+
         except Exception as e:
             return [{"error": f"Failed to generate flashcards: {str(e)}"}]
     
@@ -177,18 +218,35 @@ class GeminiAI:
         prompt = f"""
         Extract the {max_concepts} most important concepts from the following academic content.
         Return the concepts as a JSON array of strings.
-        
+
         Content:
-        {content}
-        
-        Concepts:
+        {content[:8000]}
+
+        Concepts (JSON array):
         """
-        
+
         try:
             response = self.model.generate_content(prompt)
-            concepts = json.loads(response.text.strip())
-            return concepts
+            response_text = response.text.strip()
+
+            # Clean the response text - remove markdown formatting if present
+            if "```json" in response_text:
+                response_text = response_text.split("```json")[1].split("```")[0].strip()
+            elif "```" in response_text:
+                response_text = response_text.split("```")[1].split("```")[0].strip()
+
+            # Try to parse the JSON response
+            concepts = json.loads(response_text)
+
+            # Ensure it's a list
+            if isinstance(concepts, list):
+                return concepts
+            else:
+                # If it's not a list, try to extract concepts from the text
+                return [concept.strip() for concept in response_text.split('\n') if concept.strip() and not concept.startswith('[') and not concept.startswith(']')][:max_concepts]
+
         except Exception as e:
+            # Return a more user-friendly error message
             return [f"Error extracting concepts: {str(e)}"]
     
     def generate_study_plan(self, topics: List[str], study_hours: int = 10) -> Dict[str, Any]:

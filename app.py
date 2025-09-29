@@ -35,6 +35,16 @@ nlp_engine = NLPEngine()
 knowledge_manager = KnowledgeManager()
 study_generator = StudyGenerator()
 
+# Add custom Jinja2 filter for JSON parsing
+def from_json(value):
+    """Parse JSON string to Python object"""
+    try:
+        return json.loads(value)
+    except (ValueError, TypeError):
+        return {}
+
+app.jinja_env.filters['from_json'] = from_json
+
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
@@ -280,29 +290,58 @@ def delete_session(session_id):
         session_id=session_id,
         user_id=current_user.user_id
     ).first()
-    
+
     if not chat_session:
         return jsonify({'error': 'Session not found'}), 404
-    
+
     try:
         # Delete all queries in this session
         QueryHistory.query.filter_by(session_id=session_id).delete()
-        
+
         # Delete the session
         db.session.delete(chat_session)
         db.session.commit()
-        
+
         return jsonify({'success': True, 'message': 'Session deleted successfully'})
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': f'Failed to delete session: {str(e)}'}), 500
+
+@app.route('/delete-study-session/<int:session_id>', methods=['DELETE'])
+@login_required
+def delete_study_session(session_id):
+    """Delete a study session and all its materials"""
+    study_session = StudySession.query.filter_by(
+        session_id=session_id,
+        user_id=current_user.user_id
+    ).first()
+
+    if not study_session:
+        return jsonify({'error': 'Study session not found'}), 404
+
+    try:
+        # Delete all study materials in this session
+        StudyMaterial.query.filter_by(study_session_id=session_id).delete()
+
+        # Delete the study session
+        db.session.delete(study_session)
+        db.session.commit()
+
+        return jsonify({'success': True, 'message': 'Study session deleted successfully'})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': f'Failed to delete study session: {str(e)}'}), 500
 
 @app.route('/study-tools')
 @login_required
 def study_tools():
     documents = Document.query.filter_by(user_id=current_user.user_id).all()
     study_sessions = StudySession.query.filter_by(user_id=current_user.user_id).order_by(StudySession.last_accessed.desc()).all()
-    return render_template('study_tools.html', documents=documents, study_sessions=study_sessions)
+
+    # Check if a document_id is provided in the URL to auto-select it
+    selected_document_id = request.args.get('document_id', type=int)
+
+    return render_template('study_tools.html', documents=documents, study_sessions=study_sessions, selected_document_id=selected_document_id)
 
 @app.route('/study-session/<int:session_id>')
 @login_required
@@ -325,57 +364,40 @@ def study_session(session_id):
 @app.route('/save-study-material', methods=['POST'])
 @login_required
 def save_study_material():
-    """Save a generated study material to a study session"""
+    """Save a generated study material to a new study session"""
     data = request.json
     document_id = data.get('document_id')
     material_type = data.get('material_type')
     content = data.get('content')
-    
+
     if not document_id or not material_type or not content:
         return jsonify({'error': 'Missing required fields'}), 400
-    
-    # Get or create study session for this document
-    study_session = StudySession.query.filter_by(
+
+    # Get document information
+    document = Document.query.filter_by(document_id=document_id, user_id=current_user.user_id).first()
+    if not document:
+        return jsonify({'error': 'Document not found'}), 404
+
+    # Create a new study session for this study attempt
+    study_session = StudySession(
         user_id=current_user.user_id,
-        document_id=document_id
-    ).first()
-    
-    if not study_session:
-        document = Document.query.filter_by(document_id=document_id).first()
-        if not document:
-            return jsonify({'error': 'Document not found'}), 404
-        
-        study_session = StudySession(
-            user_id=current_user.user_id,
-            document_id=document_id,
-            session_name=f"Study Session - {document.filename}"
-        )
-        db.session.add(study_session)
-        db.session.commit()
-    
-    # Check for duplicate material
-    existing_material = StudyMaterial.query.filter_by(
-        study_session_id=study_session.session_id,
-        material_type=material_type
-    ).first()
-    
-    if existing_material:
-        # Update existing material
-        existing_material.content = content
-        existing_material.last_accessed = datetime.utcnow()
-    else:
-        # Create new material
-        study_material = StudyMaterial(
-            user_id=current_user.user_id,
-            study_session_id=study_session.session_id,
-            material_type=material_type,
-            content=content,
-            source_documents=[document_id]
-        )
-        db.session.add(study_material)
-    
+        document_id=document_id,
+        session_name=f"Study Session - {document.filename} - {datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    )
+    db.session.add(study_session)
     db.session.commit()
-    
+
+    # Create new material in this session
+    study_material = StudyMaterial(
+        user_id=current_user.user_id,
+        study_session_id=study_session.session_id,
+        material_type=material_type,
+        content=json.dumps(content),
+        source_documents=[document_id]
+    )
+    db.session.add(study_material)
+    db.session.commit()
+
     return jsonify({'success': True, 'message': 'Material saved successfully', 'session_id': study_session.session_id})
 
 @app.route('/generate-summary/<int:document_id>')
@@ -423,9 +445,9 @@ def generate_concepts(document_id):
     document = Document.query.filter_by(document_id=document_id, user_id=current_user.user_id).first()
     if not document:
         return jsonify({'error': 'Document not found'}), 404
-    
+
     concepts = study_generator.extract_key_concepts(document.document_id)
-    
+
     # Return the generated concepts without saving to database
     # The save-study-material route will handle saving with proper session linking
     return jsonify({'concepts': concepts})

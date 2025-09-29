@@ -44,52 +44,73 @@
                             <div class="summary-content">
                                 <h6>Summary</h6>
                                 <div class="border p-3 bg-light rounded">
-                                    {{ material.content.summary|replace('\n', '<br>')|safe }}
+                                    {% if material.content.summary %}
+                                        {{ material.content.summary|replace('\n', '<br>')|safe }}
+                                    {% elif material.content|from_json %}
+                                        {{ (material.content|from_json).summary|replace('\n', '<br>')|safe }}
+                                    {% else %}
+                                        No summary content available
+                                    {% endif %}
                                 </div>
                             </div>
                         {% elif material.material_type == 'quiz' %}
                             <div class="quiz-content">
                                 <h6>Quiz Questions</h6>
-                                {% for question in material.content %}
-                                <div class="card mb-3">
-                                    <div class="card-body">
-                                        <h6>Question {{ loop.index }}</h6>
-                                        <p>{{ question.question }}</p>
-                                        <ul class="list-unstyled">
-                                            {% for option in question.options %}
-                                            <li>{{ option }}</li>
-                                            {% endfor %}
-                                        </ul>
-                                        <p><strong>Answer:</strong> {{ question.answer }}</p>
+                                {% set quiz_data = material.content.quiz if material.content.quiz else (material.content|from_json).quiz %}
+                                {% if quiz_data %}
+                                    {% for question in quiz_data %}
+                                    <div class="card mb-3">
+                                        <div class="card-body">
+                                            <h6>Question {{ loop.index }}</h6>
+                                            <p>{{ question.question }}</p>
+                                            <ul class="list-unstyled">
+                                                {% for option in question.options %}
+                                                <li>{{ option }}</li>
+                                                {% endfor %}
+                                            </ul>
+                                            <p><strong>Answer:</strong> {{ question.answer }}</p>
+                                        </div>
                                     </div>
-                                </div>
-                                {% endfor %}
+                                    {% endfor %}
+                                {% else %}
+                                    No quiz questions available
+                                {% endif %}
                             </div>
                         {% elif material.material_type == 'flashcards' %}
                             <div class="flashcards-content">
                                 <h6>Flashcards</h6>
                                 <div class="row">
-                                    {% for card in material.content %}
-                                    <div class="col-md-6 mb-3">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h6>Card {{ loop.index }}</h6>
-                                                <p><strong>Front:</strong> {{ card.front }}</p>
-                                                <p><strong>Back:</strong> {{ card.back }}</p>
+                                    {% set flashcards_data = material.content.flashcards if material.content.flashcards else (material.content|from_json).flashcards %}
+                                    {% if flashcards_data %}
+                                        {% for card in flashcards_data %}
+                                        <div class="col-md-6 mb-3">
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h6>Card {{ loop.index }}</h6>
+                                                    <p><strong>Front:</strong> {{ card.front or card.question }}</p>
+                                                    <p><strong>Back:</strong> {{ card.back or card.answer }}</p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </div>
-                                    {% endfor %}
+                                        {% endfor %}
+                                    {% else %}
+                                        No flashcards available
+                                    {% endif %}
                                 </div>
                             </div>
                         {% elif material.material_type == 'concepts' %}
                             <div class="concepts-content">
                                 <h6>Key Concepts</h6>
-                                <ul class="list-group">
-                                    {% for concept in material.content.concepts %}
-                                    <li class="list-group-item">{{ concept }}</li>
-                                    {% endfor %}
-                                </ul>
+                                {% set concepts_data = material.content.concepts if material.content.concepts else (material.content|from_json).concepts %}
+                                {% if concepts_data %}
+                                    <ul class="list-group">
+                                        {% for concept in concepts_data %}
+                                        <li class="list-group-item">{{ concept }}</li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    No concepts available
+                                {% endif %}
                             </div>
                         {% endif %}
                     </div>
