@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+
+{% block title %}Upload Materials - AI Tutor Agent{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Upload Course Materials</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Upload Documents</h5>
+            </div>
+            <div class="card-body">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt fa-3x text-primary mb-3"></i>
+                    <h5>Drag & Drop Files Here</h5>
+                    <p class="text-muted">Supported formats: PDF, DOCX, JPG, JPEG, PNG, BMP, TIFF (Max: 50MB per file)</p>
+                    <input type="file" id="fileInput" multiple accept=".pdf,.docx,.jpg,.jpeg,.png,.bmp,.tiff" style="display: none;">
+                    <button type="button" class="btn btn-primary mt-3" onclick="document.getElementById('fileInput').click()">
+                        <i class="fas fa-folder-open me-2"></i>Browse Files
+                    </button>
+                </div>
+                
+                <div id="uploadProgress" class="mt-4" style="display: none;">
+                    <h6>Upload Progress</h6>
+                    <div class="progress mb-3">
+                        <div id="progressBar" class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="uploadStatus"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Upload Tips</h5>
+            </div>
+            <div class="card-body">
+                <ul class="list-unstyled">
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Upload lecture slides, textbooks, or notes
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Ensure text is selectable in PDFs
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Organize by course or subject
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-check text-success me-2"></i>
+                        Upload multiple related documents
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">What Happens Next?</h5>
+            </div>
+            <div class="card-body">
+                <ol class="small">
+                    <li class="mb-2">Document is processed by AI</li>
+                    <li class="mb-2">Key concepts are extracted</li>
+                    <li class="mb-2">Knowledge base is updated</li>
+                    <li class="mb-2">Ready for Q&A and study tools</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('fileInput').addEventListener('change', handleFileUpload);
+document.getElementById('uploadArea').addEventListener('dragover', handleDragOver);
+document.getElementById('uploadArea').addEventListener('drop', handleDrop);
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.currentTarget.style.backgroundColor = '#e9ecef';
+}
+
+function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.style.backgroundColor = '#f8f9fa';
+    const files = e.dataTransfer.files;
+    uploadFiles(files);
+}
+
+function handleFileUpload(e) {
+    const files = e.target.files;
+    uploadFiles(files);
+}
+
+function uploadFiles(files) {
+    if (files.length === 0) return;
+    
+    const progressDiv = document.getElementById('uploadProgress');
+    const progressBar = document.getElementById('progressBar');
+    const statusDiv = document.getElementById('uploadStatus');
+    
+    progressDiv.style.display = 'block';
+    progressBar.style.width = '0%';
+    statusDiv.innerHTML = 'Starting upload...';
+    
+    const formData = new FormData();
+    for (let file of files) {
+        formData.append('file', file);
+    }
+    
+    fetch('{{ url_for("upload") }}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            statusDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+        } else {
+            progressBar.style.width = '100%';
+            statusDiv.innerHTML = `<div class="alert alert-success">Success: ${data.message}</div>`;
+            setTimeout(() => {
+                window.location.href = '{{ url_for("library") }}';
+            }, 2000);
+        }
+    })
+    .catch(error => {
+        statusDiv.innerHTML = `<div class="alert alert-danger">Upload failed: ${error}</div>`;
+    });
+}
+</script>
+{% endblock %}

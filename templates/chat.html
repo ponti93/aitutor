@@ -1,0 +1,343 @@
+{% extends "base.html" %}
+
+{% block title %}Chat with AI Tutor - AI Tutor Agent{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-comments me-2"></i>
+        {% if session_data %}
+            Continue Chat Session {{ session_data.session_id }}
+        {% else %}
+            New Chat with AI Tutor
+        {% endif %}
+    </h1>
+    <div>
+        <a href="{{ url_for('chat_sessions') }}" class="btn btn-outline-primary">
+            <i class="fas fa-history me-2"></i>View Chat Sessions
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">Conversation</h5>
+                    <div class="document-selector">
+                        <select id="documentSelect" class="form-select form-select-sm" style="width: 250px;">
+                            <option value="">Select a document to work with...</option>
+                            {% for document in documents %}
+                            <option value="{{ document.document_id }}">{{ document.filename }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div id="selectedDocumentInfo" class="alert alert-info mb-3" style="display: none;">
+                    <i class="fas fa-file me-2"></i>
+                    <strong>Currently working with:</strong> 
+                    <span id="currentDocumentName"></span>
+                </div>
+                
+                <div id="chatMessages" style="height: 350px; overflow-y: auto; padding: 10px; border: 1px solid #dee2e6; border-radius: 5px; margin-bottom: 15px;">
+                    {% if session_data and session_data.queries %}
+                        {% for query in session_data.queries %}
+                        <div class="chat-message user-message">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0 me-2">
+                                    <i class="fas fa-user text-primary"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">You</div>
+                                    <div>{{ query.user_query }}</div>
+                                    <small class="text-muted">{{ query.query_timestamp.strftime('%H:%M') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="chat-message ai-message">
+                            <div class="d-flex align-items-start">
+                                <div class="flex-shrink-0 me-2">
+                                    <i class="fas fa-robot text-success"></i>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <div class="fw-bold">AI Tutor</div>
+                                    <div>{{ query.ai_response }}</div>
+                                    <small class="text-muted">{{ query.query_timestamp.strftime('%H:%M') }}</small>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center text-muted mt-5">
+                            <i class="fas fa-comments fa-3x mb-3"></i>
+                            <p>Select a document above to start chatting with your AI Tutor</p>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="input-group">
+                    <input type="text" id="userInput" class="form-control" placeholder="Ask a question about the selected document..." maxlength="1000" disabled>
+                    <button id="sendButton" class="btn btn-primary" disabled>
+                        <i class="fas fa-paper-plane"></i> Send
+                    </button>
+                </div>
+                <small class="text-muted">Select a document first, then press Enter to send your message</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Chat Tips</h5>
+            </div>
+            <div class="card-body">
+                <h6 class="card-subtitle mb-3">Try asking questions like:</h6>
+                <ul class="list-unstyled small">
+                    <li class="mb-2">
+                        <i class="fas fa-star text-primary me-2"></i>
+                        <strong>"What are the main topics in my document?"</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-star text-primary me-2"></i>
+                        <strong>"Explain [specific concept]"</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-star text-primary me-2"></i>
+                        <strong>"Summarize the key points"</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-star text-primary me-2"></i>
+                        <strong>"What should I focus on for studying?"</strong>
+                    </li>
+                    <li class="mb-2">
+                        <i class="fas fa-star text-primary me-2"></i>
+                        <strong>"Give me examples of [topic]"</strong>
+                    </li>
+                </ul>
+                <div class="mt-3 p-2 bg-light rounded">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        I'll help you understand your uploaded course materials using Gemini AI!
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Session Info</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <strong>Session ID:</strong>
+                    <span id="sessionId">{% if session_data %}{{ session_data.session_id }}{% else %}New{% endif %}</span>
+                </div>
+                <div class="mb-2">
+                    <strong>Messages:</strong>
+                    <span id="messageCount">{% if session_data %}{{ session_data.queries|length }}{% else %}0{% endif %}</span>
+                </div>
+                <div>
+                    <strong>Relevance Score:</strong>
+                    <span id="relevanceScore">-</span>
+                </div>
+                {% if session_data %}
+                <div class="mt-3">
+                    <button id="endSessionBtn" class="btn btn-warning btn-sm w-100">
+                        <i class="fas fa-stop me-1"></i>End Session
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let messageCount = {% if session_data %}{{ session_data.queries|length }}{% else %}0{% endif %};
+let currentDocumentId = null;
+let currentDocumentName = '';
+let currentSessionId = {% if session_data %}{{ session_data.session_id }}{% else %}null{% endif %};
+
+// Document selector functionality
+document.getElementById('documentSelect').addEventListener('change', function() {
+    const selectedOption = this.options[this.selectedIndex];
+    currentDocumentId = this.value;
+    currentDocumentName = selectedOption.text;
+    
+    if (currentDocumentId) {
+        // Enable chat interface
+        document.getElementById('userInput').disabled = false;
+        document.getElementById('sendButton').disabled = false;
+        
+        // Show document info
+        document.getElementById('selectedDocumentInfo').style.display = 'block';
+        document.getElementById('currentDocumentName').textContent = currentDocumentName;
+        
+        // Clear initial placeholder if no messages yet
+        if (messageCount === 0) {
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="text-center text-muted mt-5">
+                    <i class="fas fa-file-alt fa-3x mb-3"></i>
+                    <p>Now working with: <strong>${currentDocumentName}</strong></p>
+                    <p>Ask questions about this document!</p>
+                </div>
+            `;
+        }
+    } else {
+        // Disable chat interface
+        document.getElementById('userInput').disabled = true;
+        document.getElementById('sendButton').disabled = true;
+        
+        // Hide document info
+        document.getElementById('selectedDocumentInfo').style.display = 'none';
+        
+        // Show placeholder if no messages
+        if (messageCount === 0) {
+            document.getElementById('chatMessages').innerHTML = `
+                <div class="text-center text-muted mt-5">
+                    <i class="fas fa-comments fa-3x mb-3"></i>
+                    <p>Select a document above to start chatting with your AI Tutor</p>
+                </div>
+            `;
+        }
+    }
+});
+
+// End session button
+if (document.getElementById('endSessionBtn')) {
+    document.getElementById('endSessionBtn').addEventListener('click', function() {
+        if (confirm('Are you sure you want to end this chat session?')) {
+            fetch('/end_session/' + currentSessionId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Session ended successfully!');
+                    window.location.href = '/chat_sessions';
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                alert('Error ending session: ' + error);
+            });
+        }
+    });
+}
+
+document.getElementById('sendButton').addEventListener('click', sendMessage);
+document.getElementById('userInput').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        sendMessage();
+    }
+});
+
+function sendMessage() {
+    const userInput = document.getElementById('userInput');
+    const message = userInput.value.trim();
+    
+    if (!message || !currentDocumentId) return;
+    
+    // Add user message to chat
+    addMessage(message, 'user');
+    userInput.value = '';
+    
+    // Show loading indicator
+    const loadingId = addMessage('Thinking...', 'ai', true);
+    
+    // Send to server with document ID and session ID
+    fetch('{{ url_for("chat") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+            query: message,
+            document_id: currentDocumentId,
+            session_id: currentSessionId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Remove loading message
+        document.getElementById(loadingId).remove();
+        
+        if (data.error) {
+            addMessage('Error: ' + data.error, 'ai');
+        } else {
+            addMessage(data.response, 'ai');
+            updateSessionInfo(data.relevance_score);
+            
+            // Update session ID if this is a new session
+            if (!currentSessionId && data.session_id) {
+                currentSessionId = data.session_id;
+                document.getElementById('sessionId').textContent = currentSessionId;
+            }
+        }
+    })
+    .catch(error => {
+        // Remove loading message
+        document.getElementById(loadingId).remove();
+        addMessage('Error: Could not connect to server', 'ai');
+        console.error('Error:', error);
+    });
+}
+
+function addMessage(text, sender, isTemp = false) {
+    const chatMessages = document.getElementById('chatMessages');
+    const messageId = isTemp ? 'temp-' + Date.now() : '';
+    
+    // Clear initial placeholder if it exists
+    const placeholder = chatMessages.querySelector('.text-center');
+    if (placeholder) {
+        placeholder.remove();
+    }
+    
+    const messageDiv = document.createElement('div');
+    messageDiv.className = `chat-message ${sender}-message`;
+    messageDiv.id = messageId;
+    messageDiv.innerHTML = `
+        <div class="d-flex align-items-start">
+            <div class="flex-shrink-0 me-2">
+                <i class="fas fa-${sender === 'user' ? 'user' : 'robot'} ${sender === 'user' ? 'text-primary' : 'text-success'}"></i>
+            </div>
+            <div class="flex-grow-1">
+                <div class="fw-bold">${sender === 'user' ? 'You' : 'AI Tutor'}</div>
+                <div>${text}</div>
+                ${!isTemp ? `<small class="text-muted">${new Date().toLocaleTimeString()}</small>` : ''}
+            </div>
+        </div>
+    `;
+    
+    chatMessages.appendChild(messageDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    
+    if (!isTemp) {
+        messageCount++;
+        document.getElementById('messageCount').textContent = messageCount;
+    }
+    
+    return messageId;
+}
+
+function updateSessionInfo(relevanceScore) {
+    document.getElementById('relevanceScore').textContent = (relevanceScore * 100).toFixed(1) + '%';
+}
+
+// Auto-scroll to bottom if there are existing messages
+if (messageCount > 0) {
+    const chatMessages = document.getElementById('chatMessages');
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+}
+</script>
+{% endblock %}

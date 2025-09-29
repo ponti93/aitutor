@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+
+{% block title %}Study Session - AI Tutor Agent{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1><i class="fas fa-book-open me-2"></i>{{ study_session.session_name }}</h1>
+                    <p class="lead mb-0">Document: {{ study_session.document.filename }}</p>
+                    <p class="text-muted">Created: {{ study_session.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+                </div>
+                <a href="{{ url_for('study_tools') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Study Tools
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Generated Materials -->
+    <div class="row">
+        {% if study_session.materials %}
+            {% for material in study_session.materials %}
+            <div class="col-12 mb-4">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">
+                            {% if material.material_type == 'summary' %}
+                                <i class="fas fa-file-alt text-primary me-2"></i>Document Summary
+                            {% elif material.material_type == 'quiz' %}
+                                <i class="fas fa-question-circle text-success me-2"></i>Practice Quiz
+                            {% elif material.material_type == 'flashcards' %}
+                                <i class="fas fa-layer-group text-info me-2"></i>Flashcards
+                            {% elif material.material_type == 'concepts' %}
+                                <i class="fas fa-lightbulb text-warning me-2"></i>Key Concepts
+                            {% endif %}
+                        </h5>
+                        <small class="text-muted">Last accessed: {{ material.last_accessed.strftime('%Y-%m-%d %H:%M') }}</small>
+                    </div>
+                    <div class="card-body">
+                        {% if material.material_type == 'summary' %}
+                            <div class="summary-content">
+                                <h6>Summary</h6>
+                                <div class="border p-3 bg-light rounded">
+                                    {{ material.content.summary|replace('\n', '<br>')|safe }}
+                                </div>
+                            </div>
+                        {% elif material.material_type == 'quiz' %}
+                            <div class="quiz-content">
+                                <h6>Quiz Questions</h6>
+                                {% for question in material.content %}
+                                <div class="card mb-3">
+                                    <div class="card-body">
+                                        <h6>Question {{ loop.index }}</h6>
+                                        <p>{{ question.question }}</p>
+                                        <ul class="list-unstyled">
+                                            {% for option in question.options %}
+                                            <li>{{ option }}</li>
+                                            {% endfor %}
+                                        </ul>
+                                        <p><strong>Answer:</strong> {{ question.answer }}</p>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% elif material.material_type == 'flashcards' %}
+                            <div class="flashcards-content">
+                                <h6>Flashcards</h6>
+                                <div class="row">
+                                    {% for card in material.content %}
+                                    <div class="col-md-6 mb-3">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6>Card {{ loop.index }}</h6>
+                                                <p><strong>Front:</strong> {{ card.front }}</p>
+                                                <p><strong>Back:</strong> {{ card.back }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% elif material.material_type == 'concepts' %}
+                            <div class="concepts-content">
+                                <h6>Key Concepts</h6>
+                                <ul class="list-group">
+                                    {% for concept in material.content.concepts %}
+                                    <li class="list-group-item">{{ concept }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="col-12">
+                <div class="text-center text-muted py-5">
+                    <i class="fas fa-inbox fa-4x mb-3"></i>
+                    <h4>No Study Materials Generated</h4>
+                    <p>This study session doesn't have any generated materials yet.</p>
+                    <a href="{{ url_for('study_tools') }}" class="btn btn-primary">
+                        <i class="fas fa-tools me-2"></i>Generate Study Materials
+                    </a>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Add any interactive functionality here if needed
+    // For example, flashcard flipping or quiz taking
+</script>
+{% endblock %}

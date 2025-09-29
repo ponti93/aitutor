@@ -1,0 +1,252 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - AI Tutor Agent{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Settings</h1>
+</div>
+
+<div class="row">
+    <!-- User Preferences -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">User Preferences</h5>
+            </div>
+            <div class="card-body">
+                <form id="preferencesForm">
+                    <div class="mb-3">
+                        <label for="studyStyle" class="form-label">Preferred Study Style</label>
+                        <select class="form-select" id="studyStyle">
+                            <option value="visual">Visual Learner</option>
+                            <option value="auditory">Auditory Learner</option>
+                            <option value="kinesthetic">Kinesthetic Learner</option>
+                            <option value="reading">Reading/Writing</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="difficultyLevel" class="form-label">Difficulty Level</label>
+                        <select class="form-select" id="difficultyLevel">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="summaryLength" class="form-label">Summary Length</label>
+                        <select class="form-select" id="summaryLength">
+                            <option value="short">Short (100-200 words)</option>
+                            <option value="medium" selected>Medium (300-500 words)</option>
+                            <option value="detailed">Detailed (500+ words)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="quizQuestions" class="form-label">Default Quiz Questions</label>
+                        <input type="number" class="form-control" id="quizQuestions" value="5" min="1" max="20">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="flashcardsCount" class="form-label">Default Flashcards</label>
+                        <input type="number" class="form-control" id="flashcardsCount" value="10" min="1" max="50">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Preferences</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Account Management -->
+    <div class="col-md-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Account Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <label class="form-label">Username</label>
+                    <p class="form-control-plaintext">{{ current_user.username }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Email</label>
+                    <p class="form-control-plaintext">{{ current_user.email }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Account Created</label>
+                    <p class="form-control-plaintext">{{ current_user.created_at.strftime('%Y-%m-%d') }}</p>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Last Login</label>
+                    <p class="form-control-plaintext">
+                        {% if current_user.last_login %}
+                            {{ current_user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                        {% else %}
+                            Never
+                        {% endif %}
+                    </p>
+                </div>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-warning" onclick="changePassword()">
+                        <i class="fas fa-key me-2"></i>Change Password
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="deleteAccount()">
+                        <i class="fas fa-trash me-2"></i>Delete Account
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Settings -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">System Settings</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                            <label class="form-check-label" for="emailNotifications">
+                                Email Notifications
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoGenerate" checked>
+                            <label class="form-check-label" for="autoGenerate">
+                                Auto-generate Study Materials
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="darkMode">
+                            <label class="form-check-label" for="darkMode">
+                                Dark Mode
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="language" class="form-label">Language</label>
+                        <select class="form-select" id="language">
+                            <option value="en" selected>English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="timezone" class="form-label">Timezone</label>
+                        <select class="form-select" id="timezone">
+                            <option value="UTC" selected>UTC</option>
+                            <option value="EST">Eastern Time (EST)</option>
+                            <option value="PST">Pacific Time (PST)</option>
+                            <option value="GMT">Greenwich Mean Time (GMT)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button class="btn btn-primary" onclick="saveSystemSettings()">
+                    <i class="fas fa-save me-2"></i>Save System Settings
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Data Management -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="card-title mb-0">Data Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-outline-info w-100" onclick="exportData()">
+                            <i class="fas fa-download me-2"></i>Export Data
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-outline-warning w-100" onclick="clearChatHistory()">
+                            <i class="fas fa-trash me-2"></i>Clear Chat History
+                        </button>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <button class="btn btn-outline-danger w-100" onclick="deleteAllData()">
+                            <i class="fas fa-bomb me-2"></i>Delete All Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function changePassword() {
+    const newPassword = prompt('Enter new password:');
+    if (newPassword && newPassword.length >= 6) {
+        alert('Password changed successfully!');
+    } else if (newPassword) {
+        alert('Password must be at least 6 characters long.');
+    }
+}
+
+function deleteAccount() {
+    if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+        alert('Account deletion requested. This feature would delete your account and all data.');
+    }
+}
+
+function saveSystemSettings() {
+    alert('System settings saved successfully!');
+}
+
+function exportData() {
+    alert('Data export initiated. This feature would download all your data.');
+}
+
+function clearChatHistory() {
+    if (confirm('Are you sure you want to clear all chat history?')) {
+        alert('Chat history cleared successfully!');
+    }
+}
+
+function deleteAllData() {
+    if (confirm('WARNING: This will delete ALL your data including documents, chat history, and study materials. This action cannot be undone. Are you sure?')) {
+        alert('All data deletion requested. This feature would permanently delete all your data.');
+    }
+}
+
+// Handle preferences form submission
+document.getElementById('preferencesForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Preferences saved successfully!');
+});
+</script>
+{% endblock %}

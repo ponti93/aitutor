@@ -1,0 +1,439 @@
+{% extends "base.html" %}
+
+{% block title %}Study Tools - AI Tutor Agent{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-12">
+            <h1><i class="fas fa-tools me-2"></i>Study Tools</h1>
+            <p class="lead">Generate personalized study materials from your uploaded documents</p>
+        </div>
+    </div>
+
+    <!-- Document Selection -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Select Document</h5>
+                    <p class="text-muted mb-3">Choose which document to use for generating study materials</p>
+                    <div class="row">
+                        <div class="col-md-8">
+                            <select id="documentSelect" class="form-select">
+                                <option value="">Select a document...</option>
+                                {% for document in documents %}
+                                <option value="{{ document.document_id }}">{{ document.filename }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <div id="selectedDocumentInfo" class="alert alert-info" style="display: none;">
+                                <i class="fas fa-file me-2"></i>
+                                <strong>Selected:</strong> <span id="currentDocumentName"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Study Tools Grid -->
+    <div class="row mb-4">
+        <!-- Summaries Tool -->
+        <div class="col-md-6">
+            <div class="card tool-card">
+                <div class="card-body text-center">
+                    <div class="tool-icon text-primary">
+                        <i class="fas fa-file-alt"></i>
+                    </div>
+                    <h4>Content Summaries</h4>
+                    <p class="text-muted">Generate concise summaries of your course materials</p>
+                    <button class="btn btn-outline-primary" onclick="generateStudyTool('summary')" id="summaryBtn" disabled>
+                        Generate Summary
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quizzes Tool -->
+        <div class="col-md-6">
+            <div class="card tool-card">
+                <div class="card-body text-center">
+                    <div class="tool-icon text-success">
+                        <i class="fas fa-question-circle"></i>
+                    </div>
+                    <h4>Practice Quizzes</h4>
+                    <p class="text-muted">Create custom quizzes to test your knowledge</p>
+                    <button class="btn btn-outline-success" onclick="generateStudyTool('quiz')" id="quizBtn" disabled>
+                        Create Quiz
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Flashcards Tool -->
+        <div class="col-md-6">
+            <div class="card tool-card">
+                <div class="card-body text-center">
+                    <div class="tool-icon text-info">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h4>Flashcards</h4>
+                    <p class="text-muted">Generate digital flashcards for active recall</p>
+                    <button class="btn btn-outline-info" onclick="generateStudyTool('flashcards')" id="flashcardsBtn" disabled>
+                        Make Flashcards
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Concepts Tool -->
+        <div class="col-md-6">
+            <div class="card tool-card">
+                <div class="card-body text-center">
+                    <div class="tool-icon text-warning">
+                        <i class="fas fa-lightbulb"></i>
+                    </div>
+                    <h4>Key Concepts</h4>
+                    <p class="text-muted">Identify and explain important concepts</p>
+                    <button class="btn btn-outline-warning" onclick="generateStudyTool('concepts')" id="conceptsBtn" disabled>
+                        Extract Concepts
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Study Sessions -->
+    <div class="row mt-5">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-history me-2"></i>Study Sessions</h4>
+                </div>
+                <div class="card-body">
+                    {% if study_sessions %}
+                        <div class="row">
+                            {% for session in study_sessions %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>{{ session.session_name }}</h6>
+                                        <p class="mb-1"><small>Document: {{ session.document.filename }}</small></p>
+                                        <p class="mb-1"><small>Created: {{ session.created_at.strftime('%Y-%m-%d %H:%M') }}</small></p>
+                                        <p class="mb-2 text-muted">{{ session.materials|length }} materials generated</p>
+                                        <div class="d-flex gap-2">
+                                            <a href="{{ url_for('study_session', session_id=session.session_id) }}" class="btn btn-primary btn-sm">
+                                                View Session
+                                            </a>
+                                            <button class="btn btn-danger btn-sm" onclick="deleteStudySession({{ session.session_id }})">
+                                                <i class="fas fa-trash"></i> Delete
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-inbox fa-3x mb-3"></i>
+                            <p>No study sessions created yet. Select a document and generate your first study material!</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Generating Study Material...</h5>
+                <p class="text-muted">This may take a few moments</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Result Modal -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resultModalTitle">Study Material Generated</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="resultModalContent">
+                <!-- Content will be populated by JavaScript -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="saveMaterial()">Save Material</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let currentDocumentId = null;
+    let currentDocumentName = '';
+    let currentGeneratedMaterial = null;
+    let currentMaterialType = '';
+
+    // Document selection functionality
+    document.getElementById('documentSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        currentDocumentId = this.value;
+        currentDocumentName = selectedOption.text;
+        
+        if (currentDocumentId) {
+            // Enable all buttons
+            document.getElementById('summaryBtn').disabled = false;
+            document.getElementById('quizBtn').disabled = false;
+            document.getElementById('flashcardsBtn').disabled = false;
+            document.getElementById('conceptsBtn').disabled = false;
+            
+            // Show document info
+            document.getElementById('selectedDocumentInfo').style.display = 'block';
+            document.getElementById('currentDocumentName').textContent = currentDocumentName;
+        } else {
+            // Disable all buttons
+            document.getElementById('summaryBtn').disabled = true;
+            document.getElementById('quizBtn').disabled = true;
+            document.getElementById('flashcardsBtn').disabled = true;
+            document.getElementById('conceptsBtn').disabled = true;
+            
+            // Hide document info
+            document.getElementById('selectedDocumentInfo').style.display = 'none';
+        }
+    });
+
+    function showLoading() {
+        $('#loadingModal').modal('show');
+    }
+
+    function hideLoading() {
+        $('#loadingModal').modal('hide');
+    }
+
+    function showResult(content, title) {
+        document.getElementById('resultModalTitle').textContent = title;
+        document.getElementById('resultModalContent').innerHTML = content;
+        $('#resultModal').modal('show');
+    }
+
+    function generateStudyTool(toolType) {
+        if (!currentDocumentId) {
+            alert('Please select a document first');
+            return;
+        }
+        
+        currentMaterialType = toolType;
+        showLoading();
+        
+        const endpoints = {
+            'summary': `/generate-summary/${currentDocumentId}`,
+            'quiz': `/generate-quiz/${currentDocumentId}`,
+            'flashcards': `/generate-flashcards/${currentDocumentId}`,
+            'concepts': `/generate-concepts/${currentDocumentId}`
+        };
+        
+        fetch(endpoints[toolType])
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.error) {
+                alert('Error: ' + data.error);
+            } else {
+                currentGeneratedMaterial = data;
+                displayGeneratedMaterial(data, toolType);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            alert('Error generating material: ' + error);
+        });
+    }
+
+    function displayGeneratedMaterial(data, toolType) {
+        let content = '';
+        let title = '';
+        
+        switch(toolType) {
+            case 'summary':
+                title = 'Document Summary';
+                content = `<div class="summary-content">
+                    <h6>Summary</h6>
+                    <div class="border p-3 bg-light rounded">
+                        ${data.summary.replace(/\n/g, '<br>')}
+                    </div>
+                </div>`;
+                break;
+                
+            case 'quiz':
+                title = 'Practice Quiz';
+                content = `<div class="quiz-content">
+                    <h6>Quiz Questions</h6>
+                    ${data.quiz.map((question, index) => `
+                        <div class="card mb-3">
+                            <div class="card-body">
+                                <h6>Question ${index + 1}</h6>
+                                <p>${question.question}</p>
+                                <ul class="list-unstyled">
+                                    ${question.options.map(option => `<li>${option}</li>`).join('')}
+                                </ul>
+                                <p><strong>Answer:</strong> ${question.answer}</p>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>`;
+                break;
+                
+            case 'flashcards':
+                title = 'Flashcards';
+                content = `<div class="flashcards-content">
+                    <h6>Flashcards</h6>
+                    <div class="row">
+                        ${data.flashcards.map((card, index) => `
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h6>Card ${index + 1}</h6>
+                                        <p><strong>Front:</strong> ${card.front}</p>
+                                        <p><strong>Back:</strong> ${card.back}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>`;
+                break;
+                
+            case 'concepts':
+                title = 'Key Concepts';
+                content = `<div class="concepts-content">
+                    <h6>Key Concepts</h6>
+                    <ul class="list-group">
+                        ${data.concepts.map(concept => `
+                            <li class="list-group-item">${concept}</li>
+                        `).join('')}
+                    </ul>
+                </div>`;
+                break;
+        }
+        
+        showResult(content, title);
+    }
+
+    function saveMaterial() {
+        if (!currentGeneratedMaterial) {
+            alert('No material to save');
+            return;
+        }
+        
+        showLoading();
+        
+        fetch('/save-study-material', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                document_id: currentDocumentId,
+                material_type: currentMaterialType,
+                content: currentGeneratedMaterial
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            hideLoading();
+            if (data.success) {
+                $('#resultModal').modal('hide');
+                alert('Material saved successfully!');
+                // Don't reload the page - keep the current session active
+                // Update the UI to show the session is active with the actual session ID
+                updateActiveSessionUI(data.session_id);
+            } else {
+                alert('Error saving material: ' + data.error);
+            }
+        })
+        .catch(error => {
+            hideLoading();
+            alert('Error saving material: ' + error);
+        });
+    }
+
+    function updateActiveSessionUI(sessionId = null) {
+        // Update the UI to show that materials are being added to the current session
+        const sessionInfo = document.getElementById('activeSessionInfo');
+        if (!sessionInfo) {
+            // Create active session info if it doesn't exist
+            const sessionDiv = document.createElement('div');
+            sessionDiv.id = 'activeSessionInfo';
+            sessionDiv.className = 'alert alert-success mt-3';
+            const sessionLink = sessionId ? `/study-session/${sessionId}` : `/study-session/${currentDocumentId}`;
+            sessionDiv.innerHTML = `
+                <i class="fas fa-play-circle me-2"></i>
+                <strong>Active Study Session:</strong> ${currentDocumentName}
+                <a href="${sessionLink}" class="btn btn-primary btn-sm ms-2">
+                    View Session
+                </a>
+            `;
+            document.querySelector('.container').insertBefore(sessionDiv, document.querySelector('.row.mt-5'));
+        } else if (sessionId) {
+            // Update the link with the actual session ID
+            const link = sessionInfo.querySelector('a');
+            link.href = `/study-session/${sessionId}`;
+        }
+    }
+
+    // Initialize active session UI if we have a document selected
+    document.getElementById('documentSelect').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        currentDocumentId = this.value;
+        currentDocumentName = selectedOption.text;
+        
+        if (currentDocumentId) {
+            // Enable all buttons
+            document.getElementById('summaryBtn').disabled = false;
+            document.getElementById('quizBtn').disabled = false;
+            document.getElementById('flashcardsBtn').disabled = false;
+            document.getElementById('conceptsBtn').disabled = false;
+            
+            // Show document info
+            document.getElementById('selectedDocumentInfo').style.display = 'block';
+            document.getElementById('currentDocumentName').textContent = currentDocumentName;
+            
+            // Check if we already have an active session for this document
+            updateActiveSessionUI();
+        } else {
+            // Disable all buttons
+            document.getElementById('summaryBtn').disabled = true;
+            document.getElementById('quizBtn').disabled = true;
+            document.getElementById('flashcardsBtn').disabled = true;
+            document.getElementById('conceptsBtn').disabled = true;
+            
+            // Hide document info
+            document.getElementById('selectedDocumentInfo').style.display = 'none';
+            
+            // Remove active session info
+            const sessionInfo = document.getElementById('activeSessionInfo');
+            if (sessionInfo) {
+                sessionInfo.remove();
+            }
+        }
+    });
+</script>
+{% endblock %}

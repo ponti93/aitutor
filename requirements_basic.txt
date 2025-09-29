@@ -1,0 +1,11 @@
+Flask==2.3.0
+SQLAlchemy==1.4.46
+psycopg2-binary==2.9.5
+nltk==3.8
+PyPDF2==3.0.1
+python-docx==0.8.11
+Flask-Login==0.6.3
+Flask-WTF==1.1.1
+WTForms==3.0.1
+python-dotenv==1.0.0
+werkzeug==2.3.7
