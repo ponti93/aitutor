@@ -154,9 +154,9 @@
                                         <td>{{ material.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
                                         <td>{{ material.last_accessed.strftime('%Y-%m-%d %H:%M') }}</td>
                                         <td>
-                                            <button class="btn btn-sm btn-outline-primary" onclick="viewMaterial({{ material.material_id }})">
-                                                <i class="fas fa-eye"></i> View
-                                            </button>
+                                            <a href="{{ url_for('study_session', session_id=material.study_session.session_id) }}" class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-eye"></i> View Session
+                                            </a>
                                         </td>
                                     </tr>
                                 {% endfor %}
@@ -173,10 +173,4 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
-function viewMaterial(materialId) {
-    // This would typically open a modal or navigate to a detailed view
-    alert('Viewing material ' + materialId + ' - This feature would show the detailed content');
-}
-</script>
 {% endblock %}

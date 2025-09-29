@@ -7,6 +7,128 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
+        /* Dark mode styles */
+        .dark-mode {
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .card {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+            border-color: #404040 !important;
+        }
+
+        .dark-mode .card-header {
+            background-color: #333333 !important;
+            border-color: #404040 !important;
+        }
+
+        .dark-mode .table {
+            color: #ffffff !important;
+        }
+
+        .dark-mode .table-striped tbody tr:nth-of-type(odd) {
+            background-color: #252525 !important;
+        }
+
+        .dark-mode .table-striped tbody tr:nth-of-type(even) {
+            background-color: #2d2d2d !important;
+        }
+
+        .dark-mode .text-muted {
+            color: #adb5bd !important;
+        }
+
+        .dark-mode .border-bottom {
+            border-color: #404040 !important;
+        }
+
+        .dark-mode .btn-outline-secondary {
+            color: #ffffff !important;
+            border-color: #6c757d !important;
+        }
+
+        .dark-mode .btn-outline-secondary:hover {
+            background-color: #6c757d !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .dropdown-menu {
+            background-color: #2d2d2d !important;
+            border-color: #404040 !important;
+        }
+
+        .dark-mode .dropdown-item {
+            color: #ffffff !important;
+        }
+
+        .dark-mode .dropdown-item:hover {
+            background-color: #404040 !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .sidebar {
+            background-color: #2d2d2d !important;
+            border-color: #404040 !important;
+        }
+
+        .dark-mode .nav-link {
+            color: #ffffff !important;
+        }
+
+        .dark-mode .nav-link:hover,
+        .dark-mode .nav-link.active {
+            background-color: #404040 !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .main-content {
+            background-color: #1a1a1a !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .upload-area {
+            background-color: #2d2d2d !important;
+            border-color: #6c757d !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .upload-area:hover {
+            background-color: #404040 !important;
+        }
+
+        .dark-mode .chat-message {
+            border-color: #404040 !important;
+        }
+
+        .dark-mode .user-message {
+            background-color: #0d6efd !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode .ai-message {
+            background-color: #404040 !important;
+            color: #ffffff !important;
+        }
+
+        .dark-mode input,
+        .dark-mode textarea,
+        .dark-mode select {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+            border-color: #404040 !important;
+        }
+
+        .dark-mode input:focus,
+        .dark-mode textarea:focus,
+        .dark-mode select:focus {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+            border-color: #0d6efd !important;
+        }
+    </style>
+    <style>
         .sidebar {
             min-height: 100vh;
             background-color: #f8f9fa;
@@ -175,6 +297,13 @@
                         </li>
                     </ul>
                     <hr>
+                    <!-- Dark Mode Toggle -->
+                    <div class="mb-3">
+                        <button id="darkModeToggle" class="btn btn-outline-secondary w-100 text-start">
+                            <i class="fas fa-moon me-2"></i>Dark Mode
+                        </button>
+                    </div>
+
                     <div class="dropdown">
                         <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                             <i class="fas fa-user-circle me-2"></i>
@@ -215,6 +344,40 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global dark mode functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const darkModeToggle = document.getElementById('darkModeToggle');
+            const body = document.body;
+
+            // Check for saved dark mode preference
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+
+            if (isDarkMode) {
+                body.classList.add('dark-mode');
+                updateDarkModeIcon(true);
+            }
+
+            darkModeToggle.addEventListener('click', function() {
+                const isDark = body.classList.toggle('dark-mode');
+                localStorage.setItem('darkMode', isDark);
+                updateDarkModeIcon(isDark);
+            });
+
+            function updateDarkModeIcon(isDark) {
+                const icon = darkModeToggle.querySelector('i');
+                if (isDark) {
+                    icon.classList.remove('fa-moon');
+                    icon.classList.add('fa-sun');
+                    darkModeToggle.innerHTML = '<i class="fas fa-sun me-2"></i>Light Mode';
+                } else {
+                    icon.classList.remove('fa-sun');
+                    icon.classList.add('fa-moon');
+                    darkModeToggle.innerHTML = '<i class="fas fa-moon me-2"></i>Dark Mode';
+                }
+            }
+        });
+    </script>
     {% block scripts %}{% endblock %}
 </body>
 </html>
