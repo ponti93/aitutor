@@ -84,11 +84,11 @@
                                     {% if flashcards_data %}
                                         {% for card in flashcards_data %}
                                         <div class="col-md-6 mb-3">
-                                            <div class="card">
+                                            <div class="flashcard card">
                                                 <div class="card-body">
                                                     <h6>Card {{ loop.index }}</h6>
-                                                    <p><strong>Front:</strong> {{ card.front or card.question }}</p>
-                                                    <p><strong>Back:</strong> {{ card.back or card.answer }}</p>
+                                                    <div class="front-text">{{ card.front or card.question }}</div>
+                                                    <div class="back-text">{{ card.back or card.answer }}</div>
                                                 </div>
                                             </div>
                                         </div>

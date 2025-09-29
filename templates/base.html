@@ -127,6 +127,53 @@
             color: #ffffff !important;
             border-color: #0d6efd !important;
         }
+
+        /* Flashcard Styling */
+        .flashcard {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-bottom: 20px;
+        }
+
+        .flashcard:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .flashcard .card-body {
+            padding: 25px;
+            color: white;
+        }
+
+        .flashcard h6 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .flashcard .front-text {
+            font-size: 1.1em;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+
+        .flashcard .back-text {
+            font-size: 1em;
+            opacity: 0.9;
+        }
+
+        /* Dark mode flashcard adjustments */
+        .dark-mode .flashcard {
+            background: linear-gradient(135deg, #4a5568 0%, #2d3748 100%);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .dark-mode .flashcard:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+        }
     </style>
     <style>
         .sidebar {

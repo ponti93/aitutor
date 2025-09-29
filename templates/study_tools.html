@@ -316,11 +316,11 @@
                         <div class="row">
                             ${data.flashcards.map((card, index) => `
                                 <div class="col-md-6 mb-3">
-                                    <div class="card">
+                                    <div class="flashcard card">
                                         <div class="card-body">
                                             <h6>Card ${index + 1}</h6>
-                                            <p><strong>Front:</strong> ${card.front || card.question}</p>
-                                            <p><strong>Back:</strong> ${card.back || card.answer}</p>
+                                            <div class="front-text">${card.front || card.question}</div>
+                                            <div class="back-text">${card.back || card.answer}</div>
                                         </div>
                                     </div>
                                 </div>
