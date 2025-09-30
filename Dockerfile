@@ -19,6 +19,9 @@ RUN apt-get update && apt-get install -y \
     tesseract-ocr-eng \
     && rm -rf /var/lib/apt/lists/*
 
+    
+RUN pip install --upgrade pip setuptools
+
 # Copy requirements first for better Docker layer caching
 COPY requirements.txt .
 
