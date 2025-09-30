@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: ai-tutor-agent
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "python app.py"
+    port: 10000
+    healthCheckPath: /
+    autoDeploy: false
+    envVars:
+      - key: DATABASE_URL
+        fromService:
+          type: pserv
+          name: ai-tutor-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: FLASK_ENV
+        value: production
+
+  - type: pserv
+    name: ai-tutor-db
+    env: postgres
+    databaseName: ai_tutor
+    user: ai_tutor_user
+    password:
+      generateValue: true
+    ipAllowList: []  # Only accessible by other services in this project

@@ -64,7 +64,7 @@
                                 </div>
                                 <div class="flex-grow-1">
                                     <div class="fw-bold">AI Tutor</div>
-                                    <div>{{ query.ai_response }}</div>
+                                    <div class="formatted-response">{{ query.ai_response|safe }}</div>
                                     <small class="text-muted">{{ query.query_timestamp.strftime('%H:%M') }}</small>
                                 </div>
                             </div>
@@ -313,7 +313,7 @@ function addMessage(text, sender, isTemp = false) {
             </div>
             <div class="flex-grow-1">
                 <div class="fw-bold">${sender === 'user' ? 'You' : 'AI Tutor'}</div>
-                <div>${text}</div>
+                <div class="${sender === 'ai' ? 'formatted-response' : ''}">${text}</div>
                 ${!isTemp ? `<small class="text-muted">${new Date().toLocaleTimeString()}</small>` : ''}
             </div>
         </div>
