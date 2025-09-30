@@ -527,4 +527,8 @@ if __name__ == '__main__':
         # Create uploads directory if it doesn't exist
         if not os.path.exists(app.config['UPLOAD_FOLDER']):
             os.makedirs(app.config['UPLOAD_FOLDER'])
-    app.run(debug=True)
+    import os
+
+port = int(os.environ.get("PORT", 10000))
+app.run(host='0.0.0.0', port=port, debug=True)
+
