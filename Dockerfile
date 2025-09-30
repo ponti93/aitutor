@@ -22,7 +22,10 @@ RUN apt-get update && apt-get install -y \
 # Copy requirements first for better Docker layer caching
 COPY requirements.txt .
 
-# Install Python dependencies
+# 🔧 Install setuptools, wheel, build tools first (important!)
+RUN pip install --upgrade pip setuptools wheel build
+
+# ✅ Then install dependencies
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the rest of the application
